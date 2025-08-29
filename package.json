@@ -1,0 +1,1 @@
+{"name":"tech-news","version":"1.0.0","description":"Noticias de actualidad tecnológica – Node + Express + MongoDB + Frontend servido por Express","main":"server.js","type":"commonjs","scripts":{"start":"node server.js","dev":"nodemon server.js"},"dependencies":{"cors":"^2.8.5","dotenv":"^16.6.1","express":"^4.21.2","mongoose":"^8.18.0"},"devDependencies":{"nodemon":"^3.1.0"}}

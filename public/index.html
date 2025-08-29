@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech News - Actualidad Tecnológica</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+    header { background: #222; color: #fff; padding: 15px; text-align: center; }
+    header h1 { margin: 0; }
+    main { padding: 20px; }
+    .filtros { display: flex; gap: 10px; margin-bottom: 20px; }
+    input, select { padding: 8px; border-radius: 5px; border: 1px solid #ccc; }
+    .noticia { background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .noticia h2 { margin: 0; }
+    .noticia p { margin: 10px 0; }
+    .destacada { border: 2px solid #007bff; }
+    footer { text-align: center; padding: 15px; background: #222; color: #fff; margin-top: 20px; }
+    .categoria { font-size: 0.9em; color: #555; }
+    .paginacion { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+    .paginacion button { padding: 8px 12px; border: none; border-radius: 5px; background: #007bff; color: #fff; cursor: pointer; }
+    .paginacion button:disabled { background: #ccc; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📰 Tech News</h1>
+    <p>Las últimas noticias del mundo tecnológico</p>
+  </header>
+
+  <main>
+    <div class="filtros">
+      <input type="text" id="buscador" placeholder="Buscar noticias..." oninput="filtrarNoticias()">
+      <select id="filtroCategoria" onchange="filtrarNoticias()">
+        <option value="">Todas las categorías</option>
+      </select>
+    </div>
+
+    <h2>Noticias recientes</h2>
+    <div id="listaNoticias">Cargando noticias...</div>
+    <div class="paginacion">
+      <button id="prevBtn" onclick="cambiarPagina(-1)">Anterior</button>
+      <span id="paginaActual">1</span>
+      <button id="nextBtn" onclick="cambiarPagina(1)">Siguiente</button>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Tech News - Proyecto Fullstack</p>
+  </footer>
+
+  <script>
+    const API_URL = "http://127.0.0.1:5000/api/noticias";
+    let todasLasNoticias = [];
+    let noticiasFiltradas = [];
+    let pagina = 1;
+    const noticiasPorPagina = 5;
+
+    async function cargarNoticias() {
+      try {
+        const res = await fetch(API_URL);
+        todasLasNoticias = await res.json();
+        noticiasFiltradas = [...todasLasNoticias];
+        cargarCategorias();
+        mostrarNoticias();
+      } catch (err) {
+        console.error(err);
+        document.getElementById("listaNoticias").innerHTML = "<p style='color:red'>Error al cargar noticias</p>";
+      }
+    }
+
+    function mostrarNoticias() {
+      const cont = document.getElementById("listaNoticias");
+      cont.innerHTML = "";
+
+      if (!noticiasFiltradas.length) {
+        cont.innerHTML = "<p>No hay noticias disponibles en este momento.</p>";
+        return;
+      }
+
+      const inicio = (pagina - 1) * noticiasPorPagina;
+      const fin = inicio + noticiasPorPagina;
+      const noticiasPagina = noticiasFiltradas.slice(inicio, fin);
+
+      noticiasPagina.forEach(n => {
+        const div = document.createElement("div");
+        div.className = "noticia" + (n.destacada ? " destacada" : "");
+        div.innerHTML = `
+          <h2>${n.titulo}</h2>
+          <p class="categoria"><b>Categoría:</b> ${n.categoria}</p>
+          <p>${n.resumen}</p>
+          <details>
+            <summary>Leer más</summary>
+            <p>${n.contenido}</p>
+          </details>
+        `;
+        cont.appendChild(div);
+      });
+
+      actualizarPaginacion();
+    }
+
+    function cargarCategorias() {
+      const select = document.getElementById("filtroCategoria");
+      select.innerHTML = `<option value="">Todas las categorías</option>`;
+      const categorias = [...new Set(todasLasNoticias.map(n => n.categoria).filter(c => c))];
+      categorias.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+      });
+    }
+
+    function filtrarNoticias() {
+      const texto = document.getElementById("buscador").value.toLowerCase();
+      const categoria = document.getElementById("filtroCategoria").value;
+
+      noticiasFiltradas = todasLasNoticias.filter(n => {
+        const coincideTexto =
+          n.titulo.toLowerCase().includes(texto) ||
+          n.resumen.toLowerCase().includes(texto) ||
+          n.contenido.toLowerCase().includes(texto);
+        const coincideCategoria = categoria ? n.categoria === categoria : true;
+        return coincideTexto && coincideCategoria;
+      });
+
+      pagina = 1;
+      mostrarNoticias();
+    }
+
+    function cambiarPagina(direccion) {
+      pagina += direccion;
+      mostrarNoticias();
+    }
+
+    function actualizarPaginacion() {
+      document.getElementById("paginaActual").textContent = pagina;
+      document.getElementById("prevBtn").disabled = pagina === 1;
+      document.getElementById("nextBtn").disabled = pagina * noticiasPorPagina >= noticiasFiltradas.length;
+    }
+
+    cargarNoticias();
+  </script>
+</body>
+</html>

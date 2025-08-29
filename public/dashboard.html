@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Tech News</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    h1 { text-align: center; }
+    form { display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; }
+    input, textarea, select { padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+    button { padding: 10px; border: none; border-radius: 5px; cursor: pointer; background: #007bff; color: white; }
+    button:hover { background: #0056b3; }
+    .noticia { background: #fff; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .acciones button { margin-right: 10px; background: #28a745; }
+    .acciones button:last-child { background: #dc3545; }
+  </style>
+</head>
+<body>
+  <h1>Dashboard - Gestión de Noticias</h1>
+
+  <!-- Formulario -->
+  <form id="formNoticia">
+    <input type="hidden" id="idNoticia">
+    <input type="text" id="titulo" placeholder="Título" required>
+    <textarea id="resumen" placeholder="Resumen" required></textarea>
+    <textarea id="contenido" placeholder="Contenido" required></textarea>
+    <select id="categoria">
+      <option value="Tecnología">Tecnología</option>
+      <option value="Innovación">Innovación</option>
+      <option value="Startups">Startups</option>
+    </select>
+    <label>
+      <input type="checkbox" id="destacada"> Noticia destacada
+    </label>
+    <button type="submit">Guardar</button>
+  </form>
+
+  <hr>
+
+  <!-- Noticias -->
+  <h2>Noticias existentes</h2>
+  <div id="listaNoticias">Cargando noticias...</div>
+
+  <script>
+    const API_URL = "http://127.0.0.1:5000/api/noticias";
+
+    async function cargarNoticias() {
+      try {
+        const res = await fetch(API_URL);
+        const noticias = await res.json();
+        const cont = document.getElementById("listaNoticias");
+        cont.innerHTML = "";
+        if (!noticias.length) {
+          cont.innerHTML = "<p>No hay noticias aún.</p>";
+          return;
+        }
+        noticias.forEach(n => {
+          const div = document.createElement("div");
+          div.className = "noticia";
+          div.innerHTML = `
+            <h3>${n.titulo}</h3>
+            <p><b>Categoría:</b> ${n.categoria}</p>
+            <p>${n.resumen}</p>
+            <div class="acciones">
+              <button onclick="editarNoticia('${n._id}','${n.titulo}','${n.resumen}','${n.contenido}','${n.categoria}',${n.destacada})">Editar</button>
+              <button onclick="eliminarNoticia('${n._id}')">Eliminar</button>
+            </div>
+          `;
+          cont.appendChild(div);
+        });
+      } catch (err) {
+        console.error(err);
+        document.getElementById("listaNoticias").innerHTML = "<p style='color:red'>Error al cargar noticias</p>";
+      }
+    }
+
+    document.getElementById("formNoticia").addEventListener("submit", async e => {
+      e.preventDefault();
+      const id = document.getElementById("idNoticia").value;
+      const noticia = {
+        titulo: document.getElementById("titulo").value,
+        resumen: document.getElementById("resumen").value,
+        contenido: document.getElementById("contenido").value,
+        categoria: document.getElementById("categoria").value,
+        destacada: document.getElementById("destacada").checked
+      };
+
+      if (id) {
+        // Editar
+        await fetch(`${API_URL}/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(noticia)
+        });
+      } else {
+        // Crear
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(noticia)
+        });
+      }
+
+      document.getElementById("formNoticia").reset();
+      document.getElementById("idNoticia").value = "";
+      cargarNoticias();
+    });
+
+    async function eliminarNoticia(id) {
+      if (!confirm("¿Seguro que deseas eliminar esta noticia?")) return;
+      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      cargarNoticias();
+    }
+
+    function editarNoticia(id, titulo, resumen, contenido, categoria, destacada) {
+      document.getElementById("idNoticia").value = id;
+      document.getElementById("titulo").value = titulo;
+      document.getElementById("resumen").value = resumen;
+      document.getElementById("contenido").value = contenido;
+      document.getElementById("categoria").value = categoria;
+      document.getElementById("destacada").checked = destacada;
+    }
+
+    cargarNoticias();
+  </script>
+</body>
+</html>
